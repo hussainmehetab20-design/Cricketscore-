@@ -1,0 +1,1597 @@
+&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+  &lt;meta charset=&quot;UTF-8&quot;&gt;
+  &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no&quot;&gt;
+  &lt;title&gt;Cricket Pro Scorekeeper &amp; Match Manager&lt;/title&gt;
+
+  &lt;!-- PWA &amp; Mobile Meta Tags --&gt;
+  &lt;meta name=&quot;theme-color&quot; content=&quot;#1e3a8a&quot;&gt;
+  &lt;meta name=&quot;apple-mobile-web-app-capable&quot; content=&quot;yes&quot;&gt;
+  &lt;meta name=&quot;apple-mobile-web-app-status-bar-style&quot; content=&quot;black-translucent&quot;&gt;
+  &lt;meta name=&quot;apple-mobile-web-app-title&quot; content=&quot;CricketPro&quot;&gt;
+  &lt;link rel=&quot;icon&quot; href=&quot;data:image/svg+xml,&lt;svg xmlns=&#39;http://www.w3.org/2000/svg&#39; viewBox=&#39;0 0 100 100&#39;&gt;&lt;text y=&#39;.9em&#39; font-size=&#39;90&#39;&gt;🏏&lt;/text&gt;&lt;/svg&gt;&quot;&gt;
+  &lt;link rel=&quot;apple-touch-icon&quot; href=&quot;data:image/svg+xml,&lt;svg xmlns=&#39;http://www.w3.org/2000/svg&#39; viewBox=&#39;0 0 100 100&#39;&gt;&lt;rect width=&#39;100&#39; height=&#39;100&#39; rx=&#39;20&#39; fill=&#39;%231e3a8a&#39;/&gt;&lt;text x=&#39;50&#39; y=&#39;70&#39; font-size=&#39;60&#39; text-anchor=&#39;middle&#39;&gt;🏏&lt;/text&gt;&lt;/svg&gt;&quot;&gt;
+  &lt;link rel=&quot;manifest&quot; href=&quot;data:application/manifest+json,%7B%22name%22%3A%22Cricket%20Live%20Scorekeeper%22%2C%22short_name%22%3A%22CricScore%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f172a%22%2C%22theme_color%22%3A%22%231e3a8a%22%7D&quot;&gt;
+
+  &lt;script src=&quot;https://cdn.tailwindcss.com/3.4.17&quot;&gt;&lt;/script&gt;
+  &lt;link href=&quot;https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=Fredoka:wght@600;700&amp;display=swap&quot; rel=&quot;stylesheet&quot;&gt;
+  &lt;style&gt;
+    body { font-family: &#39;Inter&#39;, sans-serif; -webkit-tap-highlight-color: transparent; }
+    .score-font { font-family: &#39;Fredoka&#39;, cursive, sans-serif; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    @keyframes winGlow {
+      0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
+      50% { box-shadow: 0 0 25px rgba(16, 185, 129, 0.8); }
+    }
+    .win-pulse {
+      animation: winGlow 1s infinite ease-in-out;
+    }
+
+    @keyframes superOverPulse {
+      0%, 100% { box-shadow: 0 0 15px rgba(245, 158, 11, 0.5); }
+      50% { box-shadow: 0 0 25px rgba(245, 158, 11, 0.9); }
+    }
+    .super-pulse {
+      animation: superOverPulse 0.8s infinite ease-in-out;
+    }
+
+    @keyframes boundaryBurst {
+      0% { transform: scale(0.9); opacity: 0; }
+      50% { transform: scale(1.1); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .boundary-pop {
+      animation: boundaryBurst 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body class=&quot;bg-slate-950 min-h-screen text-slate-100 p-2 sm:p-4 flex flex-col items-center justify-start select-none relative&quot;&gt;
+  &lt;main class=&quot;w-full max-w-sm flex flex-col items-center space-y-2.5&quot;&gt;
+    &lt;!-- Top Match Header Card --&gt;
+    &lt;header class=&quot;w-full bg-gradient-to-r from-blue-900 to-indigo-950 border border-blue-800 p-3 rounded-2xl shadow-xl space-y-2&quot;&gt;
+      &lt;div class=&quot;flex justify-between items-center&quot;&gt;
+        &lt;div class=&quot;flex items-center space-x-1.5&quot;&gt;
+          &lt;span class=&quot;text-2xl p-1 bg-blue-800/80 rounded-xl shadow-xs&quot;&gt;🏏&lt;/span&gt;
+          &lt;div&gt;
+            &lt;div class=&quot;flex items-center space-x-1.5&quot;&gt;
+              &lt;span id=&quot;format-badge&quot; class=&quot;text-[10px] uppercase font-bold tracking-wider text-blue-300&quot;&gt;T20 (20 ov)&lt;/span&gt;
+              &lt;span class=&quot;text-[9px] text-amber-300 font-mono&quot; id=&quot;bowler-quota-badge&quot;&gt;Max 4 ov/bowler&lt;/span&gt;
+            &lt;/div&gt;
+            &lt;div id=&quot;innings-status-badge&quot; class=&quot;text-xs font-bold text-white flex items-center gap-1&quot;&gt;
+              &lt;span class=&quot;w-2 h-2 rounded-full bg-emerald-400 animate-pulse&quot;&gt;&lt;/span&gt;
+              &lt;span id=&quot;innings-label&quot;&gt;1st Innings&lt;/span&gt;
+            &lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+
+        <!-- Top Action Buttons -->
+        <div class="flex items-center space-x-1.5 text-xs">
+          <button 
+            type="button" 
+            id="history-modal-btn"
+            class="px-2 py-1 bg-blue-950 hover:bg-blue-900 text-blue-200 rounded-lg border border-blue-800 font-bold transition-colors flex items-center gap-1"
+            title="Saved Matches & History"
+          >
+            <span>📜</span> <span>History</span>
+          </button>
+          <button 
+            type="button" 
+            id="sound-toggle-btn"
+            class="p-1 bg-blue-950 hover:bg-blue-900 text-blue-200 rounded-lg border border-blue-800 transition-colors"
+            title="Toggle Sound Effects"
+            aria-label="Toggle sound"
+          >
+            <span id="sound-icon">🔊</span>
+          </button>
+          <button 
+            type="button" 
+            id="reset-match-btn"
+            class="p-1 bg-blue-950 hover:bg-blue-900 text-blue-200 rounded-lg border border-blue-800 transition-colors"
+            title="New Match"
+            aria-label="Start new match"
+          >
+            🔄
+          </button>
+        </div>
+      </div>
+
+      <!-- Editable Team A & Team B Header -->
+      <div class="grid grid-cols-2 gap-2 pt-1 border-t border-blue-800/80 text-xs">
+        <div id="team-a-box" class="p-1.5 rounded-xl bg-blue-950/80 border-2 border-emerald-500/80 flex flex-col">
+          <span class="text-[9px] font-bold text-emerald-400 uppercase tracking-wider flex items-center justify-between">
+            <span>Team A (Batting)</span>
+            <span class="text-[8px] bg-emerald-950 text-emerald-300 px-1 rounded">1st Inn</span>
+          </span>
+          <input type="text" id="team-a-name" value="Team A" class="bg-transparent text-white font-bold text-xs focus:outline-none focus:border-b border-blue-400 mt-0.5" title="Tap to rename Team A">
+          <span id="team-a-final-score" class="text-[10px] text-slate-400 font-mono mt-0.5">0/0 (0.0 ov)</span>
+        </div>
+
+        <div id="team-b-box" class="p-1.5 rounded-xl bg-slate-900/80 border border-slate-700 flex flex-col">
+          <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+            <span>Team B (Bowling)</span>
+            <span class="text-[8px] bg-slate-800 text-slate-400 px-1 rounded">2nd Inn</span>
+          </span>
+          <input type="text" id="team-b-name" value="Team B" class="bg-transparent text-slate-300 font-bold text-xs focus:outline-none focus:border-b border-blue-400 mt-0.5" title="Tap to rename Team B">
+          <span id="team-b-final-score" class="text-[10px] text-slate-400 font-mono mt-0.5">Yet to bat</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Quick Format Switcher Pills -->
+    <nav class="w-full flex space-x-1.5 overflow-x-auto no-scrollbar text-xs" aria-label="Match Formats" id="format-pills-bar">
+      <button 
+        type="button" 
+        data-format="GULLY" 
+        data-overs="6" 
+        class="format-pill flex-1 py-1 rounded-xl font-bold border transition-colors bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800 flex items-center justify-center gap-1"
+      >
+        <span>🏏</span> <span>Gully (6 ov)</span>
+      </button>
+
+      <button 
+        type="button" 
+        data-format="T20" 
+        data-overs="20" 
+        class="format-pill flex-1 py-1 rounded-xl font-bold border transition-colors bg-blue-600 border-blue-400 text-white shadow-sm flex items-center justify-center gap-1"
+      >
+        <span>⚡</span> <span>T20 (20 ov)</span>
+      </button>
+
+      <button 
+        type="button" 
+        data-format="ODI" 
+        data-overs="50" 
+        class="format-pill flex-1 py-1 rounded-xl font-bold border transition-colors bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800 flex items-center justify-center gap-1"
+      >
+        <span>🏆</span> <span>ODI (50 ov)</span>
+      </button>
+    </nav>
+
+    <!-- Match & Bowler Quota Status Strip -->
+    <div class="w-full flex items-center justify-between px-1 text-[11px] text-slate-400">
+      <span>Format Limit: <strong id="format-match-limit" class="text-blue-300">20.0 ov</strong></span>
+      <span>Single Bowler Quota: <strong id="format-bowler-limit" class="text-amber-400 font-bold">Max 4.0 ov</strong></span>
+    </div>
+
+    <!-- Target Chase Banner (Active in 2nd Innings) -->
+    <div id="target-banner" class="w-full bg-gradient-to-r from-blue-950 to-indigo-900 border border-blue-700/80 p-2.5 rounded-xl shadow-md space-y-1 text-xs hidden">
+      <div class="flex justify-between items-center">
+        <span class="font-bold text-blue-300 uppercase tracking-wider text-[10px]">Chasing Target</span>
+        <span id="target-total-badge" class="font-bold text-amber-300 bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800">Target: 0</span>
+      </div>
+      <div class="flex justify-between items-baseline pt-0.5">
+        <div id="target-equation" class="text-xs font-bold text-white">Need <span class="text-emerald-400">0 runs</span> in <span class="text-cyan-300">0 balls</span></div>
+        <div class="text-[11px] text-slate-300">RRR: <strong id="rrr-display" class="text-amber-400 font-mono">0.00</strong></div>
+      </div>
+    </div>
+
+    <!-- Match Result Banner -->
+    <div id="result-banner" class="w-full p-3 rounded-xl shadow-lg border text-center space-y-1.5 win-pulse hidden">
+      <div id="result-title" class="text-base font-bold text-white title-font">🏆 Match Won!</div>
+      <div id="result-desc" class="text-xs text-emerald-200 font-medium">Target achieved!</div>
+      <div id="super-over-action-slot" class="pt-1 hidden">
+        <button 
+          type="button" 
+          id="trigger-super-over-btn" 
+          class="w-full py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg uppercase tracking-wider active:scale-95 transition-transform"
+        >
+          ⚡ Start Super Over (1 Over Shootout)
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Scoreboard Display Card -->
+    <section class="w-full bg-slate-900 border-2 border-slate-800 rounded-2xl p-3.5 shadow-2xl flex flex-col items-center space-y-2">
+      <!-- Big Score Numbers -->
+      <div class="w-full flex justify-between items-baseline px-1">
+        <div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400" id="current-batting-label">Team A Batting</span>
+          <div class="flex items-baseline space-x-2">
+            <div id="score-display" class="text-4xl font-bold text-white score-font">0/0</div>
+          </div>
+        </div>
+
+        <div class="text-right">
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Overs</span>
+          <div class="flex items-baseline space-x-1 justify-end">
+            <span id="overs-display" class="text-2xl font-bold text-blue-400 score-font">0.0</span>
+            <span id="max-overs-display" class="text-xs text-slate-500 font-bold">/ 20 ov</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Run Rate & Stats Bar -->
+      <div class="w-full bg-slate-800/80 rounded-xl px-2.5 py-1.5 flex justify-between items-center text-xs border border-slate-700/80">
+        <div>
+          <span class="text-slate-400">CRR:</span>
+          <span id="crr-display" class="font-bold text-emerald-400">0.00</span>
+        </div>
+        <div>
+          <span class="text-slate-400">Extras:</span>
+          <span id="extras-display" class="font-bold text-amber-400">0</span>
+        </div>
+        <div>
+          <span class="text-slate-400">Boundaries:</span>
+          <span id="boundaries-display" class="font-bold text-cyan-400">0 (4s:0, 6s:0)</span>
+        </div>
+      </div>
+
+      <!-- Current Over Ball-By-Ball Strip -->
+      <div class="w-full flex flex-col space-y-1">
+        <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider px-1">
+          <span>This Over</span>
+          <span id="over-number-tag">Over 1</span>
+        </div>
+        <div id="over-strip" class="w-full h-10 bg-slate-950 rounded-xl border border-slate-800 flex items-center space-x-2 px-3 overflow-x-auto no-scrollbar">
+          <span class="text-xs text-slate-600 italic">Tap keypad below to record 1st ball</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Batters Card -->
+    <section class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-lg space-y-1.5">
+      <div class="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1">
+        <span>Batters (tap name to edit)</span>
+        <div class="flex space-x-3.5">
+          <span class="w-5 text-right">R</span>
+          <span class="w-5 text-right">B</span>
+          <span class="w-5 text-right">4s</span>
+          <span class="w-5 text-right">6s</span>
+          <span class="w-9 text-right">SR</span>
+        </div>
+      </div>
+
+      <!-- Striker Row -->
+      <div id="striker-row" class="p-1.5 rounded-xl bg-blue-950/60 border border-blue-600/80 flex justify-between items-center text-xs font-semibold">
+        <div class="flex items-center space-x-1.5">
+          <span class="text-emerald-400 font-bold">🏏*</span>
+          <input type="text" id="striker-name" value="Striker" class="bg-transparent text-white font-bold w-24 border-b border-dashed border-blue-400/80 focus:border-solid focus:border-blue-400 focus:outline-none">
+        </div>
+        <div class="flex space-x-3.5 text-right">
+          <span id="striker-runs" class="w-5 font-bold text-white">0</span>
+          <span id="striker-balls" class="w-5 text-slate-300">0</span>
+          <span id="striker-fours" class="w-5 text-slate-400">0</span>
+          <span id="striker-sixes" class="w-5 text-slate-400">0</span>
+          <span id="striker-sr" class="w-9 text-emerald-400 font-mono text-[11px]">0.0</span>
+        </div>
+      </div>
+
+      <!-- Non-Striker Row -->
+      <div id="nonstriker-row" class="p-1.5 rounded-xl bg-slate-800/80 border border-slate-700/80 flex justify-between items-center text-xs font-medium text-slate-300">
+        <div class="flex items-center space-x-1.5">
+          <span class="text-slate-500">🏃</span>
+          <input type="text" id="nonstriker-name" value="Non-Striker" class="bg-transparent text-slate-300 font-medium w-24 border-b border-dashed border-slate-600 focus:border-solid focus:border-blue-400 focus:outline-none">
+        </div>
+        <div class="flex space-x-3.5 text-right">
+          <span id="nonstriker-runs" class="w-5 font-bold text-white">0</span>
+          <span id="nonstriker-balls" class="w-5 text-slate-400">0</span>
+          <span id="nonstriker-fours" class="w-5 text-slate-400">0</span>
+          <span id="nonstriker-sixes" class="w-5 text-slate-400">0</span>
+          <span id="nonstriker-sr" class="w-9 text-slate-400 font-mono text-[11px]">0.0</span>
+        </div>
+      </div>
+
+      <!-- Swap Strike Button -->
+      <div class="flex justify-end pt-0.5">
+        <button 
+          type="button" 
+          id="swap-strike-btn"
+          class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-blue-300 text-[10px] font-bold rounded-lg active:scale-95 transition-transform flex items-center gap-1"
+        >
+          <span>⇄</span> <span>Swap Strike</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Comprehensive Bowler Tracker & Over Limits -->
+    <section class="w-full bg-slate-900 border border-slate-800 rounded-2xl p-2.5 shadow-lg space-y-2">
+      <!-- Active Bowler Header -->
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-1.5 text-xs">
+          <span class="text-amber-400">⚡</span>
+          <span class="text-[10px] uppercase font-bold text-slate-400">Active Bowler:</span>
+          <input type="text" id="bowler-name" value="Bowler 1" class="bg-transparent text-amber-300 font-bold text-xs w-24 border-b border-dashed border-amber-500/80 focus:border-solid focus:border-amber-400 focus:outline-none" title="Tap to rename or switch bowler">
+        </div>
+        <button 
+          type="button" 
+          id="change-bowler-btn"
+          class="px-2 py-0.5 bg-amber-950/80 hover:bg-amber-900 border border-amber-700 text-amber-300 text-[10px] font-bold rounded-lg transition-colors"
+        >
+          Change Bowler
+        </button>
+      </div>
+
+      <!-- Active Bowler Quota Status Alert -->
+      <div id="bowler-quota-warning" class="text-[10px] text-amber-400 font-bold bg-amber-950/60 px-2 py-0.5 rounded border border-amber-800 hidden">
+        ⚠️ Quota Alert: Bowler reached max overs limit!
+      </div>
+
+      <!-- All Bowlers Scorecard Table -->
+      <div class="bg-slate-950 rounded-xl p-2 border border-slate-800 space-y-1">
+        <div class="flex justify-between text-[9px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-1 px-1">
+          <span>Bowler Spell History</span>
+          <div class="flex space-x-3 text-right">
+            <span class="w-6">O</span>
+            <span class="w-5">M</span>
+            <span class="w-6">R</span>
+            <span class="w-6 text-emerald-400">W</span>
+            <span class="w-8 text-cyan-300">Econ</span>
+          </div>
+        </div>
+
+        <div id="bowlers-table-body" class="space-y-1 max-h-24 overflow-y-auto no-scrollbar text-xs"></div>
+      </div>
+    </section>
+
+    <!-- 1-Tap Scoring Keypad -->
+    <section class="w-full space-y-1.5">
+      <div class="flex justify-between items-center px-1">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400">Scoring Keypad</h2>
+        <div class="flex items-center space-x-2">
+          <button 
+            type="button" 
+            id="save-match-btn"
+            class="text-xs font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1 active:scale-95 transition-transform"
+            title="Save and Pause Match"
+          >
+            <span>💾</span> <span>Save & Pause</span>
+          </button>
+          <button 
+            type="button" 
+            id="undo-btn"
+            class="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 active:scale-95 transition-transform"
+            title="Undo Last Ball"
+          >
+            <span>↶</span> <span>Undo</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Run Buttons Grid -->
+      <div class="grid grid-cols-4 gap-1.5" id="keypad">
+        <button type="button" class="score-btn p-2.5 bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-xl border border-slate-700 text-base font-bold text-slate-300 shadow-md transition-all flex flex-col items-center" data-type="run" data-val="0">
+          <span>0</span> <span class="text-[9px] text-slate-500 font-normal">Dot</span>
+        </button>
+
+        <button type="button" class="score-btn p-2.5 bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-xl border border-slate-700 text-base font-bold text-white shadow-md transition-all flex flex-col items-center" data-type="run" data-val="1">
+          <span>1</span> <span class="text-[9px] text-slate-400 font-normal">Single</span>
+        </button>
+
+        <button type="button" class="score-btn p-2.5 bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-xl border border-slate-700 text-base font-bold text-white shadow-md transition-all flex flex-col items-center" data-type="run" data-val="2">
+          <span>2</span> <span class="text-[9px] text-slate-400 font-normal">Double</span>
+        </button>
+
+        <button type="button" class="score-btn p-2.5 bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-xl border border-slate-700 text-base font-bold text-white shadow-md transition-all flex flex-col items-center" data-type="run" data-val="3">
+          <span>3</span> <span class="text-[9px] text-slate-400 font-normal">Three</span>
+        </button>
+
+        <!-- Four (Blue Boundary) with Bat Crack -->
+        <button type="button" class="score-btn p-2.5 bg-blue-900/70 hover:bg-blue-800 active:scale-95 rounded-xl border-2 border-blue-500 text-base font-bold text-blue-200 shadow-md transition-all flex flex-col items-center ring-1 ring-blue-400/50" data-type="run" data-val="4">
+          <span>4</span> <span class="text-[9px] text-blue-300 font-bold uppercase">Four!</span>
+        </button>
+
+        <!-- Six (Purple Maximum) with Monster Bat Crack -->
+        <button type="button" class="score-btn p-2.5 bg-purple-900/70 hover:bg-purple-800 active:scale-95 rounded-xl border-2 border-purple-500 text-base font-bold text-purple-200 shadow-md transition-all flex flex-col items-center ring-1 ring-purple-400/50" data-type="run" data-val="6">
+          <span>6</span> <span class="text-[9px] text-purple-300 font-bold uppercase">Six!</span>
+        </button>
+
+        <!-- Wicket -->
+        <button type="button" class="score-btn p-2.5 bg-rose-950/70 hover:bg-rose-900/80 active:scale-95 rounded-xl border-2 border-rose-600 text-base font-bold text-rose-300 shadow-md transition-all flex flex-col items-center" data-type="wicket" data-val="W">
+          <span>W</span> <span class="text-[9px] text-rose-400 font-bold uppercase">Wicket</span>
+        </button>
+
+        <!-- Wide -->
+        <button type="button" class="score-btn p-2.5 bg-amber-950/50 hover:bg-amber-900/70 active:scale-95 rounded-xl border border-amber-700 text-xs font-bold text-amber-300 shadow-md transition-all flex flex-col items-center justify-center" data-type="extra" data-val="Wd">
+          <span>Wd</span> <span class="text-[9px] text-amber-400 font-normal">+1 Wide</span>
+        </button>
+
+        <!-- No Ball -->
+        <button type="button" class="score-btn p-2 bg-amber-950/50 hover:bg-amber-900/70 active:scale-95 rounded-xl border border-amber-700 text-xs font-bold text-amber-300 shadow-md transition-all flex flex-col items-center justify-center col-span-2" data-type="extra" data-val="Nb">
+          <span>Nb</span> <span class="text-[9px] text-amber-400 font-normal">+1 No Ball</span>
+        </button>
+
+        <!-- Bye -->
+        <button type="button" class="score-btn p-2 bg-slate-800 hover:bg-slate-700 active:scale-95 rounded-xl border border-slate-700 text-xs font-bold text-slate-300 shadow-md transition-all flex flex-col items-center justify-center col-span-2" data-type="extra" data-val="B">
+          <span>1 Bye</span> <span class="text-[9px] text-slate-400 font-normal">Leg Bye / Bye</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Save Status Footer -->
+    <footer class="w-full flex justify-between items-center px-2 text-[10px] text-slate-500">
+      <span class="flex items-center gap-1">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="save-status-indicator">Auto-Save: Active</span>
+      </span>
+      <span id="match-saved-timestamp">Just now</span>
+    </footer>
+  &lt;/main&gt;
+
+  &lt;!-- Change Bowler Modal with Over Limits --&gt;
+  &lt;div id=&quot;bowler-modal&quot; class=&quot;fixed inset-0 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden&quot;&gt;
+    &lt;div class=&quot;w-full max-w-xs bg-slate-900 rounded-2xl p-5 shadow-2xl border border-slate-800 space-y-4 text-white&quot;&gt;
+      &lt;div class=&quot;flex justify-between items-center border-b border-slate-800 pb-2&quot;&gt;
+        &lt;div&gt;
+          &lt;h3 class=&quot;text-sm font-bold text-amber-400&quot;&gt;Select Next Bowler&lt;/h3&gt;
+          &lt;span id=&quot;modal-bowler-quota-hint&quot; class=&quot;text-[10px] text-slate-400&quot;&gt;Max 4.0 overs per bowler&lt;/span&gt;
+        &lt;/div&gt;
+        &lt;button type=&quot;button&quot; id=&quot;close-bowler-modal&quot; class=&quot;text-slate-400 hover:text-slate-200 text-lg leading-none&quot;&gt;✕&lt;/button&gt;
+      &lt;/div&gt;
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label for="new-bowler-input" class="block text-slate-400 font-medium mb-1">Enter New Bowler Name:</label>
+          <input type="text" id="new-bowler-input" placeholder="e.g. Shami, Bumrah, Ashish" class="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white font-bold text-sm focus:outline-none focus:border-amber-400">
+        </div>
+
+        <div>
+          <span class="block text-slate-400 font-medium mb-1">Or Pick from Team Bowlers:</span>
+          <div id="existing-bowlers-list" class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto no-scrollbar"></div>
+        </div>
+
+        <div id="bowler-modal-error" class="hidden text-xs text-rose-300 bg-rose-950/80 border border-rose-700/80 p-2 rounded-xl text-center font-medium"></div>
+      </div>
+
+      <button 
+        type="button" 
+        id="confirm-bowler-btn"
+        class="w-full py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-colors"
+      >
+        Set Active Bowler
+      </button>
+    </div>
+  &lt;/div&gt;
+
+  &lt;!-- Innings Break Modal --&gt;
+  &lt;div id=&quot;innings-break-modal&quot; class=&quot;fixed inset-0 bg-slate-950/85 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden&quot;&gt;
+    &lt;div class=&quot;w-full max-w-xs bg-slate-900 rounded-2xl p-5 shadow-2xl border border-blue-600 text-center space-y-3 text-white&quot;&gt;
+      &lt;div class=&quot;text-4xl&quot;&gt;🏁🏏&lt;/div&gt;
+      &lt;div&gt;
+        &lt;h3 class=&quot;text-base font-bold text-blue-300&quot;&gt;1st Innings Complete!&lt;/h3&gt;
+        &lt;p id=&quot;innings-break-summary&quot; class=&quot;text-xs text-slate-300 mt-1&quot;&gt;Team A scored 64/4 in 6.0 overs&lt;/p&gt;
+      &lt;/div&gt;
+
+      <div class="p-3 bg-blue-950/80 rounded-xl border border-blue-700">
+        <span class="text-[10px] uppercase font-bold text-blue-300">Target to Win</span>
+        <div id="break-target-display" class="text-2xl font-bold text-amber-400 score-font mt-0.5">65 Runs</div>
+      </div>
+
+      <button 
+        type="button" 
+        id="start-2nd-innings-btn"
+        class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition-transform active:scale-95"
+      >
+        Start 2nd Innings (Team B Batting)
+      </button>
+    </div>
+  &lt;/div&gt;
+
+  &lt;!-- Saved Matches &amp; History Modal --&gt;
+  &lt;div id=&quot;history-modal&quot; class=&quot;fixed inset-0 bg-slate-950/85 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden&quot;&gt;
+    &lt;div class=&quot;w-full max-w-xs bg-slate-900 rounded-2xl p-4 shadow-2xl border border-slate-800 space-y-3 text-white flex flex-col max-h-[85vh]&quot;&gt;
+      &lt;div class=&quot;flex justify-between items-center border-b border-slate-800 pb-2&quot;&gt;
+        &lt;div class=&quot;flex items-center space-x-2&quot;&gt;
+          &lt;span class=&quot;text-xl&quot;&gt;📜&lt;/span&gt;
+          &lt;h3 class=&quot;text-sm font-bold text-blue-300&quot;&gt;Saved Matches History&lt;/h3&gt;
+        &lt;/div&gt;
+        &lt;button type=&quot;button&quot; id=&quot;close-history-modal&quot; class=&quot;text-slate-400 hover:text-slate-200 text-lg leading-none&quot;&gt;✕&lt;/button&gt;
+      &lt;/div&gt;
+
+      <p class="text-[11px] text-slate-400">All paused and completed matches are stored on your device. Tap any paused match to resume!</p>
+
+      <div id="history-matches-list" class="space-y-2 overflow-y-auto no-scrollbar flex-1 pr-1"></div>
+
+      <button 
+        type="button" 
+        id="clear-history-btn"
+        class="w-full py-1.5 bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 border border-slate-700 text-[10px] font-bold rounded-lg transition-colors"
+      >
+        Clear All Match Records
+      </button>
+    </div>
+  &lt;/div&gt;
+
+  &lt;script&gt;
+    const ACTIVE_MATCH_KEY = &#39;cricket_active_match_v7&#39;;
+    const MATCHES_HISTORY_KEY = &#39;cricket_matches_history_v7&#39;;
+    const SOUND_KEY = &#39;cricket_sound_setting&#39;;
+    // In-page Toast notification (replaces alert dialogs)
+    let toastTimer = null;
+    function showToast(msg, icon = &#39;⚠️&#39;, borderClass = &#39;border-amber-500/80&#39;, textClass = &#39;text-amber-200&#39;) {
+      const container = document.getElementById(&#39;toast-container&#39;);
+      const card = document.getElementById(&#39;toast-card&#39;);
+      const msgEl = document.getElementById(&#39;toast-message&#39;);
+      const iconEl = document.getElementById(&#39;toast-icon&#39;);
+      if (!container || !card || !msgEl) return;
+
+      msgEl.textContent = msg;
+      if (iconEl) iconEl.textContent = icon;
+      card.className = &quot;bg-slate-900/95 border-2 &quot; + borderClass + &quot; &quot; + textClass + &quot; px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 backdrop-blur-md&quot;;
+
+      container.classList.remove(&#39;opacity-0&#39;, &#39;-translate-y-4&#39;, &#39;pointer-events-none&#39;);
+      container.classList.add(&#39;opacity-100&#39;, &#39;translate-y-0&#39;);
+
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() =&gt; {
+        container.classList.remove(&#39;opacity-100&#39;, &#39;translate-y-0&#39;);
+        container.classList.add(&#39;opacity-0&#39;, &#39;-translate-y-4&#39;, &#39;pointer-events-none&#39;);
+      }, 3500);
+    }
+
+
+    // Format Rules Configuration (User-defined limits!)
+    const formatRules = {
+      GULLY: { overs: 6, maxBowlerOvers: 3, label: &#39;Gully (6 ov)&#39; },
+      T20:   { overs: 20, maxBowlerOvers: 4, label: &#39;T20 (20 ov)&#39; },
+      ODI:   { overs: 50, maxBowlerOvers: 10, label: &#39;ODI (50 ov)&#39; }
+    };
+
+    // Match Engine State
+    let currentInnings = 1; // 1, 2, or &#39;SUPER_1&#39;, &#39;SUPER_2&#39;
+    let matchFormat = &#39;T20&#39;; // GULLY, T20, ODI
+    let totalOversLimit = 20;
+    let maxBowlerOvers = 4;
+    let matchFinished = false;
+    let isSuperOver = false;
+
+    // Teams
+    let teamAName = &#39;Team A&#39;;
+    let teamBName = &#39;Team B&#39;;
+
+    // Innings 1 Record
+    let innings1 = {
+      battingTeam: &#39;Team A&#39;,
+      bowlingTeam: &#39;Team B&#39;,
+      runs: 0,
+      wickets: 0,
+      legalBalls: 0,
+      extras: 0,
+      fours: 0,
+      sixes: 0,
+      ballHistory: [],
+      bowlers: {}
+    };
+
+    // Innings 2 Record
+    let innings2 = {
+      battingTeam: &#39;Team B&#39;,
+      bowlingTeam: &#39;Team A&#39;,
+      runs: 0,
+      wickets: 0,
+      legalBalls: 0,
+      extras: 0,
+      fours: 0,
+      sixes: 0,
+      ballHistory: [],
+      bowlers: {}
+    };
+
+    let targetScore = 0;
+
+    // Batters State
+    let striker = { name: &#39;Striker&#39;, runs: 0, balls: 0, fours: 0, sixes: 0 };
+    let nonStriker = { name: &#39;Non-Striker&#39;, runs: 0, balls: 0, fours: 0, sixes: 0 };
+    let batsmanOutCount = 0;
+
+    // Active Bowler
+    let currentBowlerName = &#39;Bowler 1&#39;;
+    let currentOverBalls = [];
+    let soundEnabled = true;
+
+    try {
+      soundEnabled = localStorage.getItem(SOUND_KEY) !== &#39;false&#39;;
+    } catch (e) {
+      soundEnabled = true;
+    }
+
+    // Web Audio Synthesizer
+    let audioCtx = null;
+    function getAudioContext() {
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) audioCtx = new AudioContextClass();
+        }
+        if (audioCtx &amp;&amp; audioCtx.state === &#39;suspended&#39;) audioCtx.resume();
+        return audioCtx;
+      } catch (e) { return null; }
+    }
+
+    function playTapSound() {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = &#39;sine&#39;;
+        osc.frequency.setValueAtTime(380, now);
+        osc.frequency.exponentialRampToValueAtTime(140, now + 0.05);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(now); osc.stop(now + 0.06);
+      } catch (e) {}
+    }
+
+    function playFourSound() {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = &#39;triangle&#39;;
+        osc1.frequency.setValueAtTime(950, now);
+        osc1.frequency.exponentialRampToValueAtTime(220, now + 0.09);
+        gain1.gain.setValueAtTime(0.24, now);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+        osc1.connect(gain1); gain1.connect(ctx.destination);
+        osc1.start(now); osc1.stop(now + 0.12);
+
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = &#39;sine&#39;;
+        osc2.frequency.setValueAtTime(460, now + 0.02);
+        osc2.frequency.exponentialRampToValueAtTime(180, now + 0.16);
+        gain2.gain.setValueAtTime(0.16, now + 0.02);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        osc2.connect(gain2); gain2.connect(ctx.destination);
+        osc2.start(now + 0.02); osc2.stop(now + 0.18);
+      } catch (e) {}
+    }
+
+    function playSixSound() {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+
+        const oscCrack = ctx.createOscillator();
+        const gainCrack = ctx.createGain();
+        oscCrack.type = &#39;sawtooth&#39;;
+        oscCrack.frequency.setValueAtTime(1250, now);
+        oscCrack.frequency.exponentialRampToValueAtTime(320, now + 0.1);
+        gainCrack.gain.setValueAtTime(0.28, now);
+        gainCrack.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+        oscCrack.connect(gainCrack); gainCrack.connect(ctx.destination);
+        oscCrack.start(now); oscCrack.stop(now + 0.14);
+
+        const oscBoom = ctx.createOscillator();
+        const gainBoom = ctx.createGain();
+        oscBoom.type = &#39;sine&#39;;
+        oscBoom.frequency.setValueAtTime(280, now + 0.01);
+        oscBoom.frequency.exponentialRampToValueAtTime(80, now + 0.25);
+        gainBoom.gain.setValueAtTime(0.22, now + 0.01);
+        gainBoom.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+        oscBoom.connect(gainBoom); gainBoom.connect(ctx.destination);
+        oscBoom.start(now + 0.01); oscBoom.stop(now + 0.28);
+      } catch (e) {}
+    }
+
+    function playWicketSound() {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = &#39;sawtooth&#39;;
+        osc.frequency.setValueAtTime(780, now);
+        osc.frequency.linearRampToValueAtTime(840, now + 0.12);
+        osc.frequency.linearRampToValueAtTime(720, now + 0.28);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.linearRampToValueAtTime(0.001, now + 0.3);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(now); osc.stop(now + 0.3);
+      } catch (e) {}
+    }
+
+    function playVictoryFanfare() {
+      if (!soundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) =&gt; {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = &#39;triangle&#39;;
+          osc.frequency.setValueAtTime(freq, now + (idx * 0.12));
+          gain.gain.setValueAtTime(0.14, now + (idx * 0.12));
+          gain.gain.linearRampToValueAtTime(0.001, now + (idx * 0.12) + 0.3);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(now + (idx * 0.12)); osc.stop(now + (idx * 0.12) + 0.3);
+        });
+      } catch (e) {}
+    }
+
+    // DOM Elements
+    const formatBadge = document.getElementById(&#39;format-badge&#39;);
+    const bowlerQuotaBadge = document.getElementById(&#39;bowler-quota-badge&#39;);
+    const inningsLabel = document.getElementById(&#39;innings-label&#39;);
+    const teamANameInput = document.getElementById(&#39;team-a-name&#39;);
+    const teamBNameInput = document.getElementById(&#39;team-b-name&#39;);
+    const teamAFinalScore = document.getElementById(&#39;team-a-final-score&#39;);
+    const teamBFinalScore = document.getElementById(&#39;team-b-final-score&#39;);
+    const teamABox = document.getElementById(&#39;team-a-box&#39;);
+    const teamBBox = document.getElementById(&#39;team-b-box&#39;);
+
+    const currentBattingLabel = document.getElementById(&#39;current-batting-label&#39;);
+    const scoreDisplay = document.getElementById(&#39;score-display&#39;);
+    const oversDisplay = document.getElementById(&#39;overs-display&#39;);
+    const maxOversDisplay = document.getElementById(&#39;max-overs-display&#39;);
+    const crrDisplay = document.getElementById(&#39;crr-display&#39;);
+    const extrasDisplay = document.getElementById(&#39;extras-display&#39;);
+    const boundariesDisplay = document.getElementById(&#39;boundaries-display&#39;);
+    const overStrip = document.getElementById(&#39;over-strip&#39;);
+    const overNumberTag = document.getElementById(&#39;over-number-tag&#39;);
+
+    const strikerNameInput = document.getElementById(&#39;striker-name&#39;);
+    const strikerRunsEl = document.getElementById(&#39;striker-runs&#39;);
+    const strikerBallsEl = document.getElementById(&#39;striker-balls&#39;);
+    const strikerFoursEl = document.getElementById(&#39;striker-fours&#39;);
+    const strikerSixesEl = document.getElementById(&#39;striker-sixes&#39;);
+    const strikerSrEl = document.getElementById(&#39;striker-sr&#39;);
+
+    const nonStrikerNameInput = document.getElementById(&#39;nonstriker-name&#39;);
+    const nonStrikerRunsEl = document.getElementById(&#39;nonstriker-runs&#39;);
+    const nonStrikerBallsEl = document.getElementById(&#39;nonstriker-balls&#39;);
+    const nonStrikerFoursEl = document.getElementById(&#39;nonstriker-fours&#39;);
+    const nonStrikerSixesEl = document.getElementById(&#39;nonstriker-sixes&#39;);
+    const nonStrikerSrEl = document.getElementById(&#39;nonstriker-sr&#39;);
+
+    const bowlerNameInput = document.getElementById(&#39;bowler-name&#39;);
+    const changeBowlerBtn = document.getElementById(&#39;change-bowler-btn&#39;);
+    const bowlerQuotaWarning = document.getElementById(&#39;bowler-quota-warning&#39;);
+    const bowlersTableBody = document.getElementById(&#39;bowlers-table-body&#39;);
+    const swapStrikeBtn = document.getElementById(&#39;swap-strike-btn&#39;);
+    const formatPillsBar = document.getElementById(&#39;format-pills-bar&#39;);
+
+    const targetBanner = document.getElementById(&#39;target-banner&#39;);
+    const targetTotalBadge = document.getElementById(&#39;target-total-badge&#39;);
+    const targetEquation = document.getElementById(&#39;target-equation&#39;);
+    const rrrDisplay = document.getElementById(&#39;rrr-display&#39;);
+    const resultBanner = document.getElementById(&#39;result-banner&#39;);
+    const resultTitle = document.getElementById(&#39;result-title&#39;);
+    const resultDesc = document.getElementById(&#39;result-desc&#39;);
+    const superOverActionSlot = document.getElementById(&#39;super-over-action-slot&#39;);
+    const triggerSuperOverBtn = document.getElementById(&#39;trigger-super-over-btn&#39;);
+
+    const keypad = document.getElementById(&#39;keypad&#39;);
+    const undoBtn = document.getElementById(&#39;undo-btn&#39;);
+    const saveMatchBtn = document.getElementById(&#39;save-match-btn&#39;);
+    const resetMatchBtn = document.getElementById(&#39;reset-match-btn&#39;);
+    const soundToggleBtn = document.getElementById(&#39;sound-toggle-btn&#39;);
+    const soundIcon = document.getElementById(&#39;sound-icon&#39;);
+    const saveStatusIndicator = document.getElementById(&#39;save-status-indicator&#39;);
+    const matchSavedTimestamp = document.getElementById(&#39;match-saved-timestamp&#39;);
+
+    // Modals
+    const bowlerModal = document.getElementById(&#39;bowler-modal&#39;);
+    const closeBowlerModal = document.getElementById(&#39;close-bowler-modal&#39;);
+    const newBowlerInput = document.getElementById(&#39;new-bowler-input&#39;);
+    const existingBowlersList = document.getElementById(&#39;existing-bowlers-list&#39;);
+    const confirmBowlerBtn = document.getElementById(&#39;confirm-bowler-btn&#39;);
+    const modalBowlerQuotaHint = document.getElementById(&#39;modal-bowler-quota-hint&#39;);
+
+    const inningsBreakModal = document.getElementById(&#39;innings-break-modal&#39;);
+    const inningsBreakSummary = document.getElementById(&#39;innings-break-summary&#39;);
+    const breakTargetDisplay = document.getElementById(&#39;break-target-display&#39;);
+    const start2ndInningsBtn = document.getElementById(&#39;start-2nd-innings-btn&#39;);
+
+    const historyModal = document.getElementById(&#39;history-modal&#39;);
+    const closeHistoryModal = document.getElementById(&#39;close-history-modal&#39;);
+    const historyModalBtn = document.getElementById(&#39;history-modal-btn&#39;);
+    const historyMatchesList = document.getElementById(&#39;history-matches-list&#39;);
+    const clearHistoryBtn = document.getElementById(&#39;clear-history-btn&#39;);
+
+    function getActiveInnings() {
+      return (currentInnings === 1 || currentInnings === &#39;SUPER_1&#39;) ? innings1 : innings2;
+    }
+
+    function getBowlerStats(name, inn) {
+      if (!inn.bowlers[name]) {
+        inn.bowlers[name] = {
+          name: name,
+          legalBalls: 0,
+          runs: 0,
+          wickets: 0,
+          maidens: 0
+        };
+      }
+      return inn.bowlers[name];
+    }
+
+    function checkBowlerQuotaReached(bowlerObj) {
+      if (!bowlerObj) return false;
+      const completedOvers = Math.floor(bowlerObj.legalBalls / 6);
+      return completedOvers &gt;= maxBowlerOvers;
+    }
+
+    // Save Active Match State
+    function saveActiveMatch(isManual = false) {
+      try {
+        const matchData = {
+          id: &#39;match_&#39; + (window.matchId || Date.now()),
+          updatedAt: Date.now(),
+          currentInnings,
+          matchFormat,
+          totalOversLimit,
+          maxBowlerOvers,
+          matchFinished,
+          isSuperOver,
+          teamAName,
+          teamBName,
+          targetScore,
+          innings1,
+          innings2,
+          striker,
+          nonStriker,
+          currentBowlerName,
+          batsmanOutCount
+        };
+
+        window.matchId = matchData.id;
+        localStorage.setItem(ACTIVE_MATCH_KEY, JSON.stringify(matchData));
+
+        let history = [];
+        const rawHist = localStorage.getItem(MATCHES_HISTORY_KEY);
+        if (rawHist) history = JSON.parse(rawHist);
+
+        const existingIndex = history.findIndex(m =&gt; m.id === matchData.id);
+        if (existingIndex &gt;= 0) {
+          history[existingIndex] = matchData;
+        } else {
+          history.unshift(matchData);
+        }
+        localStorage.setItem(MATCHES_HISTORY_KEY, JSON.stringify(history.slice(0, 15)));
+
+        const now = new Date();
+        matchSavedTimestamp.textContent = now.toLocaleTimeString([], { hour: &#39;2-digit&#39;, minute: &#39;2-digit&#39;, second: &#39;2-digit&#39; });
+        saveStatusIndicator.textContent = isManual ? &#39;Match Paused &amp; Saved!&#39; : &#39;Auto-Saved&#39;;
+      } catch (e) {}
+    }
+
+    function loadActiveMatch() {
+      try {
+        const raw = localStorage.getItem(ACTIVE_MATCH_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        window.matchId = data.id;
+        currentInnings = data.currentInnings || 1;
+        matchFormat = data.matchFormat || &#39;T20&#39;;
+        totalOversLimit = data.totalOversLimit || 20;
+        maxBowlerOvers = data.maxBowlerOvers || 4;
+        matchFinished = data.matchFinished || false;
+        isSuperOver = data.isSuperOver || false;
+        teamAName = data.teamAName || &#39;Team A&#39;;
+        teamBName = data.teamBName || &#39;Team B&#39;;
+        targetScore = data.targetScore || 0;
+        if (data.innings1) innings1 = data.innings1;
+        if (data.innings2) innings2 = data.innings2;
+        if (data.striker) striker = data.striker;
+        if (data.nonStriker) nonStriker = data.nonStriker;
+        if (data.currentBowlerName) currentBowlerName = data.currentBowlerName;
+        batsmanOutCount = data.batsmanOutCount || 0;
+      } catch (e) {}
+    }
+
+    function resumeMatchFromHistory(matchObj) {
+      window.matchId = matchObj.id;
+      currentInnings = matchObj.currentInnings || 1;
+      matchFormat = matchObj.matchFormat || &#39;T20&#39;;
+      totalOversLimit = matchObj.totalOversLimit || 20;
+      maxBowlerOvers = matchObj.maxBowlerOvers || 4;
+      matchFinished = matchObj.matchFinished || false;
+      isSuperOver = matchObj.isSuperOver || false;
+      teamAName = matchObj.teamAName || &#39;Team A&#39;;
+      teamBName = matchObj.teamBName || &#39;Team B&#39;;
+      targetScore = matchObj.targetScore || 0;
+      innings1 = matchObj.innings1;
+      innings2 = matchObj.innings2;
+      striker = matchObj.striker;
+      nonStriker = matchObj.nonStriker;
+      currentBowlerName = matchObj.currentBowlerName;
+      batsmanOutCount = matchObj.batsmanOutCount || 0;
+
+      historyModal.classList.add(&#39;hidden&#39;);
+      updateFormatPillsUI();
+      saveActiveMatch(true);
+      render();
+    }
+
+    function updateFormatPillsUI() {
+      document.querySelectorAll(&#39;.format-pill&#39;).forEach(btn =&gt; {
+        if (btn.dataset.format === matchFormat) {
+          btn.className = &#39;format-pill flex-1 py-1 rounded-xl font-bold border transition-colors bg-blue-600 border-blue-400 text-white shadow-sm flex flex-col items-center justify-center&#39;;
+        } else {
+          btn.className = &#39;format-pill flex-1 py-1 rounded-xl font-bold border transition-colors bg-slate-900 border-slate-700 text-slate-300 hover:bg-slate-800 flex flex-col items-center justify-center&#39;;
+        }
+      });
+      formatBadge.textContent = isSuperOver ? &#39;⚡ Super Over&#39; : `${matchFormat} (${totalOversLimit} ov)`;
+      bowlerQuotaBadge.textContent = isSuperOver ? &#39;Max 1 ov/bowler&#39; : `Max ${maxBowlerOvers} ov/bowler`;
+      modalBowlerQuotaHint.textContent = `Max ${maxBowlerOvers}.0 overs per bowler in ${matchFormat}`;
+    }
+
+    // Format selection
+    formatPillsBar.addEventListener(&#39;click&#39;, function(e) {
+      const btn = e.target.closest(&#39;.format-pill&#39;);
+      if (!btn || isSuperOver) return;
+
+      const inn = getActiveInnings();
+      matchFormat = btn.dataset.format;
+      totalOversLimit = parseInt(btn.dataset.overs);
+      maxBowlerOvers = parseInt(btn.dataset.bowlermax);
+
+      updateFormatPillsUI();
+      saveActiveMatch();
+      render();
+    });
+
+    teamANameInput.addEventListener(&#39;input&#39;, () =&gt; {
+      teamAName = teamANameInput.value.trim() || &#39;Team A&#39;;
+      innings1.battingTeam = teamAName;
+      innings2.bowlingTeam = teamAName;
+      saveActiveMatch();
+      render();
+    });
+
+    teamBNameInput.addEventListener(&#39;input&#39;, () =&gt; {
+      teamBName = teamBNameInput.value.trim() || &#39;Team B&#39;;
+      innings1.bowlingTeam = teamBName;
+      innings2.battingTeam = teamBName;
+      saveActiveMatch();
+      render();
+    });
+
+    strikerNameInput.addEventListener(&#39;input&#39;, () =&gt; {
+      striker.name = strikerNameInput.value;
+      saveActiveMatch();
+    });
+    nonStrikerNameInput.addEventListener(&#39;input&#39;, () =&gt; {
+      nonStriker.name = nonStrikerNameInput.value;
+      saveActiveMatch();
+    });
+    bowlerNameInput.addEventListener(&#39;input&#39;, () =&gt; {
+      currentBowlerName = bowlerNameInput.value;
+      saveActiveMatch();
+      render();
+    });
+
+    function swapStrike() {
+      const temp = striker;
+      striker = nonStriker;
+      nonStriker = temp;
+      render();
+    }
+
+    swapStrikeBtn.addEventListener(&#39;click&#39;, () =&gt; {
+      swapStrike();
+      saveActiveMatch();
+    });
+
+    // Bowler Modal Handlers with Quota Check
+    changeBowlerBtn.addEventListener(&#39;click&#39;, () =&gt; {
+      newBowlerInput.value = &#39;&#39;;
+      const inn = getActiveInnings();
+      existingBowlersList.innerHTML = &#39;&#39;;
+
+      const names = Object.keys(inn.bowlers);
+      if (names.length === 0) {
+        existingBowlersList.innerHTML = &#39;&lt;span class=&quot;text-[10px] text-slate-500 italic&quot;&gt;No previous bowlers recorded&lt;/span&gt;&#39;;
+      } else {
+        names.forEach(name =&gt; {
+          const b = inn.bowlers[name];
+          const isQuotaFull = checkBowlerQuotaReached(b);
+          const bOvers = `${Math.floor(b.legalBalls / 6)}.${b.legalBalls % 6}`;
+
+          const pill = document.createElement(&#39;button&#39;);
+          pill.type = &#39;button&#39;;
+          pill.className = `px-2 py-1 border rounded-lg text-xs font-semibold flex items-center gap-1 ${isQuotaFull ? &#39;bg-slate-900 border-slate-700 text-slate-500 opacity-60&#39; : &#39;bg-slate-800 hover:bg-slate-700 border-slate-600 text-amber-200&#39;}`;
+          pill.innerHTML = `&lt;span&gt;${name}&lt;/span&gt; &lt;span class=&quot;text-[10px] text-slate-400&quot;&gt;(${bOvers}/${maxBowlerOvers} ov)&lt;/span&gt; ${isQuotaFull ? &#39;&lt;span class=&quot;text-[9px] text-rose-400&quot;&gt;Full&lt;/span&gt;&#39; : &#39;&#39;}`;
+          
+          if (!isQuotaFull) {
+            pill.onclick = () =&gt; { newBowlerInput.value = name; };
+          }
+          existingBowlersList.appendChild(pill);
+        });
+      }
+      modalBowlerQuotaHint.textContent = `Single Bowler Limit: Max ${maxBowlerOvers}.0 overs in ${matchFormat}`;
+      bowlerModal.classList.remove(&#39;hidden&#39;);
+    });
+
+    closeBowlerModal.addEventListener(&#39;click&#39;, () =&gt; bowlerModal.classList.add(&#39;hidden&#39;));
+
+    confirmBowlerBtn.addEventListener(&#39;click&#39;, () =&gt; {
+      const selected = newBowlerInput.value.trim();
+      if (selected) {
+        const inn = getActiveInnings();
+        const b = getBowlerStats(selected, inn);
+        if (checkBowlerQuotaReached(b)) {
+        const modalErr = document.getElementById(&#39;bowler-modal-error&#39;);
+        if (modalErr) {
+          modalErr.textContent = `${selected} has finished their quota of ${maxBowlerOvers} overs! Pick another bowler.`;
+          modalErr.classList.remove(&#39;hidden&#39;);
+        }
+        showToast(`${selected} reached quota of ${maxBowlerOvers} overs!`, &#39;⚠️&#39;, &#39;border-rose-500/80&#39;, &#39;text-rose-200&#39;);
+          return;
+        }
+        currentBowlerName = selected;
+        bowlerNameInput.value = currentBowlerName;
+      }
+      bowlerModal.classList.add(&#39;hidden&#39;);
+      saveActiveMatch();
+      render();
+    });
+
+    // Start Super Over Handler!
+    triggerSuperOverBtn.addEventListener(&#39;click&#39;, () =&gt; {
+      isSuperOver = true;
+      currentInnings = &#39;SUPER_1&#39;;
+      matchFormat = &#39;SUPER&#39;;
+      totalOversLimit = 1; // 1 Over Shootout!
+      maxBowlerOvers = 1;  // Max 1 over per bowler
+      matchFinished = false;
+      targetScore = 0;
+      currentOverBalls = [];
+      batsmanOutCount = 0;
+
+      // Reset Super Over Innings
+      innings1 = {
+        battingTeam: teamBName, // Tied match: chasing team bats first in super over
+        bowlingTeam: teamAName,
+        runs: 0, wickets: 0, legalBalls: 0, extras: 0, fours: 0, sixes: 0, ballHistory: [], bowlers: {}
+      };
+      innings2 = {
+        battingTeam: teamAName,
+        bowlingTeam: teamBName,
+        runs: 0, wickets: 0, legalBalls: 0, extras: 0, fours: 0, sixes: 0, ballHistory: [], bowlers: {}
+      };
+
+      striker = { name: &#39;SO Striker 1&#39;, runs: 0, balls: 0, fours: 0, sixes: 0 };
+      nonStriker = { name: &#39;SO Striker 2&#39;, runs: 0, balls: 0, fours: 0, sixes: 0 };
+      currentBowlerName = &#39;SO Bowler 1&#39;;
+      getBowlerStats(currentBowlerName, innings1);
+
+      resultBanner.classList.add(&#39;hidden&#39;);
+      superOverActionSlot.classList.add(&#39;hidden&#39;);
+      updateFormatPillsUI();
+      saveActiveMatch(true);
+      render();
+    });
+
+    function render() {
+      const inn = getActiveInnings();
+      const isSecondInn = (currentInnings === 2 || currentInnings === &#39;SUPER_2&#39;);
+
+      teamANameInput.value = teamAName;
+      teamBNameInput.value = teamBName;
+
+      // Header Boxes
+      if (!isSecondInn) {
+        teamABox.className = &#39;p-1.5 rounded-xl bg-blue-950/80 border-2 border-emerald-500/80 flex flex-col&#39;;
+        teamBBox.className = &#39;p-1.5 rounded-xl bg-slate-900/80 border border-slate-700 flex flex-col opacity-70&#39;;
+        inningsLabel.textContent = isSuperOver ? &#39;⚡ Super Over 1st Inn&#39; : &#39;1st Innings&#39;;
+        currentBattingLabel.textContent = `${inn.battingTeam} Batting`;
+        teamAFinalScore.textContent = `${innings1.runs}/${innings1.wickets} (${Math.floor(innings1.legalBalls/6)}.${innings1.legalBalls%6} ov)`;
+        teamBFinalScore.textContent = isSuperOver ? &#39;Super Over&#39; : &#39;Yet to bat&#39;;
+      } else {
+        teamABox.className = &#39;p-1.5 rounded-xl bg-slate-900/80 border border-slate-700 flex flex-col opacity-70&#39;;
+        teamBBox.className = &#39;p-1.5 rounded-xl bg-blue-950/80 border-2 border-emerald-500/80 flex flex-col&#39;;
+        inningsLabel.textContent = isSuperOver ? &#39;⚡ Super Over 2nd Inn (Target Chase)&#39; : &#39;2nd Innings (Chasing)&#39;;
+        currentBattingLabel.textContent = `${inn.battingTeam} Batting`;
+        teamAFinalScore.textContent = `${innings1.runs}/${innings1.wickets} (${Math.floor(innings1.legalBalls/6)}.${innings1.legalBalls%6} ov)`;
+        teamBFinalScore.textContent = `${innings2.runs}/${innings2.wickets} (${Math.floor(innings2.legalBalls/6)}.${innings2.legalBalls%6} ov)`;
+      }
+
+      scoreDisplay.textContent = `${inn.runs}/${inn.wickets}`;
+
+      const completedOvers = Math.floor(inn.legalBalls / 6);
+      const ballsInCurrentOver = inn.legalBalls % 6;
+      oversDisplay.textContent = `${completedOvers}.${ballsInCurrentOver}`;
+      maxOversDisplay.textContent = `/ ${totalOversLimit} ov`;
+
+      const oversFloat = inn.legalBalls / 6;
+      const crr = oversFloat &gt; 0 ? (inn.runs / oversFloat).toFixed(2) : &#39;0.00&#39;;
+      crrDisplay.textContent = crr;
+      extrasDisplay.textContent = inn.extras;
+      boundariesDisplay.textContent = `${inn.fours + inn.sixes} (4s:${inn.fours}, 6s:${inn.sixes})`;
+
+      // Bowler Quota Warning for Active Bowler
+      const activeBowlerStats = inn.bowlers[currentBowlerName];
+      if (checkBowlerQuotaReached(activeBowlerStats)) {
+        bowlerQuotaWarning.classList.remove(&#39;hidden&#39;);
+        bowlerQuotaWarning.textContent = `⚠️ Quota Reached: ${currentBowlerName} bowled ${Math.floor(activeBowlerStats.legalBalls/6)} ov (Max ${maxBowlerOvers} ov)! Change bowler.`;
+      } else {
+        bowlerQuotaWarning.classList.add(&#39;hidden&#39;);
+      }
+
+      // Target Chase Engine
+      const totalLegalBallsInMatch = totalOversLimit * 6;
+      const ballsLeft = Math.max(totalLegalBallsInMatch - inn.legalBalls, 0);
+      const runsNeeded = targetScore - inn.runs;
+      const maxWickets = isSuperOver ? 2 : 10; // In Super Over, only 2 wickets allowed!
+
+      if (isSecondInn &amp;&amp; targetScore &gt; 0) {
+        targetBanner.classList.remove(&#39;hidden&#39;);
+        targetTotalBadge.textContent = `Target: ${targetScore}`;
+
+        if (inn.runs &gt;= targetScore) {
+          matchFinished = true;
+          resultBanner.classList.remove(&#39;hidden&#39;);
+          resultBanner.className = &#39;w-full p-3 rounded-xl shadow-lg border text-center space-y-1 win-pulse bg-emerald-950/90 border-emerald-500&#39;;
+          resultTitle.textContent = `🏆 ${inn.battingTeam} WON THE MATCH!`;
+          const wicketsLeft = maxWickets - inn.wickets;
+          resultDesc.textContent = `${isSuperOver ? &#39;Super Over Target&#39; : &#39;Target&#39;} achieved! Won by ${wicketsLeft} wickets with ${ballsLeft} balls left!`;
+          targetEquation.innerHTML = &#39;&lt;span class=&quot;text-emerald-400 font-bold&quot;&gt;Target Achieved!&lt;/span&gt;&#39;;
+          rrrDisplay.textContent = &#39;0.00&#39;;
+          superOverActionSlot.classList.add(&#39;hidden&#39;);
+        } else if (ballsLeft === 0 || inn.wickets &gt;= maxWickets) {
+          matchFinished = true;
+          resultBanner.classList.remove(&#39;hidden&#39;);
+
+          // EXACT TIE CONDITION! (Scores equal at end of 2nd innings)
+          if (inn.runs === (targetScore - 1)) {
+            resultBanner.className = &#39;w-full p-3 rounded-xl shadow-lg border text-center space-y-1.5 super-pulse bg-amber-950/95 border-amber-400&#39;;
+            resultTitle.textContent = &#39;🤝 SCORES ARE TIED!&#39;;
+            resultDesc.textContent = `Both teams finished with ${inn.runs} runs! A Super Over is required to determine the winner!`;
+            superOverActionSlot.classList.remove(&#39;hidden&#39;);
+          } else {
+            resultBanner.className = &#39;w-full p-3 rounded-xl shadow-lg border text-center space-y-1 bg-rose-950/90 border-rose-500&#39;;
+            const winMargin = (targetScore - 1) - inn.runs;
+            resultTitle.textContent = `🏆 ${inn.bowlingTeam} WON THE MATCH!`;
+            resultDesc.textContent = `Defended total successfully! Won by ${winMargin} runs!`;
+            superOverActionSlot.classList.add(&#39;hidden&#39;);
+          }
+        } else {
+          resultBanner.classList.add(&#39;hidden&#39;);
+          superOverActionSlot.classList.add(&#39;hidden&#39;);
+          targetEquation.innerHTML = `Need &lt;span class=&quot;text-emerald-400 font-bold&quot;&gt;${runsNeeded} runs&lt;/span&gt; in &lt;span class=&quot;text-cyan-300 font-bold&quot;&gt;${ballsLeft} balls&lt;/span&gt;`;
+          const oversRemainingFloat = ballsLeft / 6;
+          const rrr = oversRemainingFloat &gt; 0 ? (runsNeeded / oversRemainingFloat).toFixed(2) : &#39;0.00&#39;;
+          rrrDisplay.textContent = rrr;
+        }
+      } else {
+        targetBanner.classList.add(&#39;hidden&#39;);
+        resultBanner.classList.add(&#39;hidden&#39;);
+        superOverActionSlot.classList.add(&#39;hidden&#39;);
+      }
+
+      // Batters
+      strikerNameInput.value = striker.name;
+      strikerRunsEl.textContent = striker.runs;
+      strikerBallsEl.textContent = striker.balls;
+      strikerFoursEl.textContent = striker.fours;
+      strikerSixesEl.textContent = striker.sixes;
+      const sSR = striker.balls &gt; 0 ? ((striker.runs / striker.balls) * 100).toFixed(1) : &#39;0.0&#39;;
+      strikerSrEl.textContent = sSR;
+
+      nonStrikerNameInput.value = nonStriker.name;
+      nonStrikerRunsEl.textContent = nonStriker.runs;
+      nonStrikerBallsEl.textContent = nonStriker.balls;
+      nonStrikerFoursEl.textContent = nonStriker.fours;
+      nonStrikerSixesEl.textContent = nonStriker.sixes;
+      const nsSR = nonStriker.balls &gt; 0 ? ((nonStriker.runs / nonStriker.balls) * 100).toFixed(1) : &#39;0.0&#39;;
+      nonStrikerSrEl.textContent = nsSR;
+
+      bowlerNameInput.value = currentBowlerName;
+      renderBowlersTable(inn);
+
+      // Over Strip
+      let currentOverDeliveries = [];
+      let legalCountInOver = 0;
+
+      for (let i = inn.ballHistory.length - 1; i &gt;= 0; i--) {
+        const delivery = inn.ballHistory[i];
+        currentOverDeliveries.unshift(delivery);
+        if (delivery.isLegal) {
+          legalCountInOver++;
+          if (legalCountInOver === ballsInCurrentOver) break;
+        }
+      }
+
+      overNumberTag.textContent = `Over ${completedOvers + 1}`;
+
+      if (currentOverDeliveries.length === 0) {
+        overStrip.innerHTML = &#39;&lt;span class=&quot;text-xs text-slate-600 italic&quot;&gt;Tap keypad below to record 1st ball&lt;/span&gt;&#39;;
+      } else {
+        overStrip.innerHTML = &#39;&#39;;
+        currentOverDeliveries.forEach(del =&gt; {
+          const pill = document.createElement(&#39;span&#39;);
+          let styleClass = &#39;w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shrink-0 &#39;;
+
+          if (del.val === &#39;4&#39;) {
+            styleClass += &#39;bg-blue-600 text-white shadow-sm ring-1 ring-blue-400 boundary-pop&#39;;
+          } else if (del.val === &#39;6&#39;) {
+            styleClass += &#39;bg-purple-600 text-white shadow-sm ring-1 ring-purple-400 boundary-pop&#39;;
+          } else if (del.val === &#39;W&#39;) {
+            styleClass += &#39;bg-rose-600 text-white shadow-sm ring-1 ring-rose-400 animate-bounce&#39;;
+          } else if (del.val === &#39;0&#39;) {
+            styleClass += &#39;bg-slate-800 text-slate-400 border border-slate-700&#39;;
+          } else if (del.type === &#39;extra&#39;) {
+            styleClass += &#39;bg-amber-600/80 text-white border border-amber-500 text-[10px]&#39;;
+          } else {
+            styleClass += &#39;bg-slate-700 text-white&#39;;
+          }
+
+          pill.className = styleClass;
+          pill.textContent = del.val;
+          overStrip.appendChild(pill);
+        });
+      }
+
+      undoBtn.style.opacity = inn.ballHistory.length &gt; 0 ? &#39;1&#39; : &#39;0.4&#39;;
+      undoBtn.style.pointerEvents = inn.ballHistory.length &gt; 0 ? &#39;auto&#39; : &#39;none&#39;;
+    }
+
+    function renderBowlersTable(inn) {
+      bowlersTableBody.innerHTML = &#39;&#39;;
+      const bNames = Object.keys(inn.bowlers);
+
+      if (bNames.length === 0) {
+        bowlersTableBody.innerHTML = &#39;&lt;div class=&quot;text-[11px] text-slate-500 italic px-1&quot;&gt;First bowler figures will appear after 1st ball&lt;/div&gt;&#39;;
+        return;
+      }
+
+      bNames.forEach(name =&gt; {
+        const b = inn.bowlers[name];
+        const row = document.createElement(&#39;div&#39;);
+        const isCurrent = (name === currentBowlerName);
+        const isQuotaFull = checkBowlerQuotaReached(b);
+
+        const bOvers = `${Math.floor(b.legalBalls / 6)}.${b.legalBalls % 6}`;
+        const bEcon = b.legalBalls &gt; 0 ? (b.runs / (b.legalBalls / 6)).toFixed(1) : &#39;0.0&#39;;
+
+        row.className = `flex justify-between items-center px-1.5 py-0.5 rounded ${isCurrent ? &#39;bg-amber-950/60 border border-amber-800/80 text-amber-200&#39; : &#39;text-slate-300&#39;}`;
+        row.innerHTML = `
+          &lt;div class=&quot;flex items-center space-x-1 font-semibold truncate max-w-[120px]&quot;&gt;
+            ${isCurrent ? &#39;&lt;span class=&quot;text-amber-400 text-[10px]&quot;&gt;▶&lt;/span&gt;&#39; : &#39;&#39;}
+            &lt;span&gt;${b.name}&lt;/span&gt;
+            &lt;span class=&quot;text-[9px] text-slate-400&quot;&gt;(${Math.floor(b.legalBalls/6)}/${maxBowlerOvers})&lt;/span&gt;
+            ${isQuotaFull ? &#39;&lt;span class=&quot;text-[8px] bg-rose-950 text-rose-300 px-1 rounded border border-rose-800&quot;&gt;Max&lt;/span&gt;&#39; : &#39;&#39;}
+          &lt;/div&gt;
+          &lt;div class=&quot;flex space-x-3 text-right font-mono text-[11px]&quot;&gt;
+            &lt;span class=&quot;w-6&quot;&gt;${bOvers}&lt;/span&gt;
+            &lt;span class=&quot;w-5 text-slate-400&quot;&gt;${b.maidens}&lt;/span&gt;
+            &lt;span class=&quot;w-6&quot;&gt;${b.runs}&lt;/span&gt;
+            &lt;span class=&quot;w-6 font-bold text-emerald-400&quot;&gt;${b.wickets}&lt;/span&gt;
+            &lt;span class=&quot;w-8 text-cyan-300&quot;&gt;${bEcon}&lt;/span&gt;
+          &lt;/div&gt;
+        `;
+        bowlersTableBody.appendChild(row);
+      });
+    }
+
+    function recordBall(type, val) {
+      if (matchFinished) return;
+
+      const inn = getActiveInnings();
+      const maxBalls = totalOversLimit * 6;
+      const maxWickets = isSuperOver ? 2 : 10;
+      if (inn.legalBalls &gt;= maxBalls || inn.wickets &gt;= maxWickets) return;
+
+      const bowlerStats = getBowlerStats(currentBowlerName, inn);
+
+      // Check if bowler quota is exceeded
+      if (checkBowlerQuotaReached(bowlerStats) &amp;&amp; (inn.legalBalls % 6 === 0)) {
+      showToast(`${currentBowlerName} completed maximum quota of ${maxBowlerOvers} overs. Please choose another bowler!`, &#39;⚠️&#39;, &#39;border-amber-500/80&#39;, &#39;text-amber-200&#39;);
+        changeBowlerBtn.click();
+        return;
+      }
+
+      const snapshot = {
+        currentInnings,
+        matchFormat,
+        totalOversLimit,
+        maxBowlerOvers,
+        targetScore,
+        matchFinished,
+        isSuperOver,
+        innSnapshot: JSON.parse(JSON.stringify(inn)),
+        striker: JSON.parse(JSON.stringify(striker)),
+        nonStriker: JSON.parse(JSON.stringify(nonStriker)),
+        currentBowlerName,
+        batsmanOutCount,
+        type,
+        val
+      };
+
+      let ballRuns = 0;
+      let isLegal = true;
+
+      if (type === &#39;run&#39;) {
+        const r = parseInt(val);
+        ballRuns = r;
+        inn.runs += r;
+        inn.legalBalls++;
+
+        striker.runs += r;
+        striker.balls++;
+
+        if (r === 4) { inn.fours++; striker.fours++; playFourSound(); }
+        else if (r === 6) { inn.sixes++; striker.sixes++; playSixSound(); }
+        else if (r &gt; 0) { playTapSound(); }
+
+        bowlerStats.legalBalls++;
+        bowlerStats.runs += r;
+        currentOverBalls.push(r);
+
+        if (r === 1 || r === 3) swapStrike();
+      } else if (type === &#39;wicket&#39;) {
+        inn.wickets++;
+        inn.legalBalls++;
+        striker.balls++;
+
+        bowlerStats.legalBalls++;
+        bowlerStats.wickets++;
+        currentOverBalls.push(0);
+
+        batsmanOutCount++;
+        playWicketSound();
+
+        striker = {
+          name: `Batter ${batsmanOutCount + 2}`,
+          runs: 0,
+          balls: 0,
+          fours: 0,
+          sixes: 0
+        };
+      } else if (type === &#39;extra&#39;) {
+        if (val === &#39;Wd&#39; || val === &#39;Nb&#39;) {
+          inn.runs += 1;
+          inn.extras += 1;
+          bowlerStats.runs += 1;
+          currentOverBalls.push(1);
+          isLegal = false;
+          playTapSound();
+        } else if (val === &#39;B&#39;) {
+          inn.runs += 1;
+          inn.extras += 1;
+          inn.legalBalls++;
+          striker.balls++;
+          bowlerStats.legalBalls++;
+          currentOverBalls.push(0);
+          isLegal = true;
+          playTapSound();
+          swapStrike();
+        }
+      }
+
+      snapshot.isLegal = isLegal;
+      inn.ballHistory.push(snapshot);
+
+      // Over Completion check
+      if (isLegal &amp;&amp; inn.legalBalls % 6 === 0) {
+        swapStrike();
+
+        if (currentOverBalls.length &gt;= 6 &amp;&amp; currentOverBalls.every(r =&gt; r === 0)) {
+          bowlerStats.maidens++;
+        }
+        currentOverBalls = [];
+
+        // Check if bowler finished quota or prompt next bowler
+        setTimeout(() =&gt; {
+          if (!matchFinished &amp;&amp; inn.legalBalls &lt; maxBalls &amp;&amp; inn.wickets &lt; maxWickets) {
+            changeBowlerBtn.click();
+          }
+        }, 300);
+      }
+
+      // Check Innings End
+      if (currentInnings === 1 || currentInnings === &#39;SUPER_1&#39;) {
+        if (inn.legalBalls &gt;= maxBalls || inn.wickets &gt;= maxWickets) {
+          targetScore = inn.runs + 1;
+          inningsBreakSummary.textContent = `${inn.battingTeam} scored ${inn.runs}/${inn.wickets} in ${Math.floor(inn.legalBalls / 6)}.${inn.legalBalls % 6} overs`;
+          breakTargetDisplay.textContent = `${targetScore} Runs (${Math.floor(targetScore / totalOversLimit * 10) / 10} RPO)`;
+          start2ndInningsBtn.textContent = `Start ${isSuperOver ? &#39;Super Over&#39; : &#39;2nd Innings&#39;} (${isSuperOver ? teamAName : teamBName} Batting)`;
+          inningsBreakModal.classList.remove(&#39;hidden&#39;);
+          playVictoryFanfare();
+        }
+      } else {
+        // 2nd innings or Super Over 2
+        if (inn.runs &gt;= targetScore) {
+          playVictoryFanfare();
+        }
+      }
+
+      saveActiveMatch();
+      render();
+    }
+
+    start2ndInningsBtn.addEventListener(&#39;click&#39;, () =&gt; {
+      inningsBreakModal.classList.add(&#39;hidden&#39;);
+      if (isSuperOver) {
+        currentInnings = &#39;SUPER_2&#39;;
+      } else {
+        currentInnings = 2;
+      }
+      batsmanOutCount = 0;
+      currentOverBalls = [];
+
+      striker = { name: &#39;Opener 1&#39;, runs: 0, balls: 0, fours: 0, sixes: 0 };
+      nonStriker = { name: &#39;Opener 2&#39;, runs: 0, balls: 0, fours: 0, sixes: 0 };
+
+      currentBowlerName = isSuperOver ? &#39;SO Bowler 2&#39; : &#39;Bowler A1&#39;;
+      getBowlerStats(currentBowlerName, innings2);
+
+      saveActiveMatch();
+      render();
+    });
+
+    function undoLastBall() {
+      const inn = getActiveInnings();
+      if (inn.ballHistory.length === 0) return;
+
+      const last = inn.ballHistory.pop();
+      currentInnings = last.currentInnings;
+      matchFormat = last.matchFormat;
+      totalOversLimit = last.totalOversLimit;
+      maxBowlerOvers = last.maxBowlerOvers;
+      targetScore = last.targetScore;
+      matchFinished = false;
+      isSuperOver = last.isSuperOver;
+
+      if (currentInnings === 1 || currentInnings === &#39;SUPER_1&#39;) innings1 = last.innSnapshot;
+      else innings2 = last.innSnapshot;
+
+      striker = last.striker;
+      nonStriker = last.nonStriker;
+      currentBowlerName = last.currentBowlerName;
+      batsmanOutCount = last.batsmanOutCount;
+
+      saveActiveMatch();
+      render();
+    }
+
+    keypad.addEventListener(&#39;click&#39;, (e) =&gt; {
+      const btn = e.target.closest(&#39;.score-btn&#39;);
+      if (!btn) return;
+      recordBall(btn.dataset.type, btn.dataset.val);
+    });
+
+    undoBtn.addEventListener(&#39;click&#39;, undoLastBall);
+
+    saveMatchBtn.addEventListener(&#39;click&#39;, () =&gt; {
+      saveActiveMatch(true);
+      historyModalBtn.click();
+    });
+
+    function renderHistoryList() {
+      historyMatchesList.innerHTML = &#39;&#39;;
+      let history = [];
+      try {
+        const raw = localStorage.getItem(MATCHES_HISTORY_KEY);
+        if (raw) history = JSON.parse(raw);
+      } catch (e) {}
+
+      if (history.length === 0) {
+        historyMatchesList.innerHTML = &#39;&lt;div class=&quot;text-center py-6 text-slate-500 text-xs&quot;&gt;No saved matches found.&lt;/div&gt;&#39;;
+        return;
+      }
+
+      history.forEach((m, idx) =&gt; {
+        const card = document.createElement(&#39;div&#39;);
+        const isCurrentActive = (m.id === window.matchId);
+        const dateStr = new Date(m.updatedAt).toLocaleDateString([], { month: &#39;short&#39;, day: &#39;numeric&#39;, hour: &#39;2-digit&#39;, minute: &#39;2-digit&#39; });
+
+        const score1 = `${m.innings1.runs}/${m.innings1.wickets} (${Math.floor(m.innings1.legalBalls/6)}.${m.innings1.legalBalls%6} ov)`;
+        const is2nd = (m.currentInnings === 2 || m.currentInnings === &#39;SUPER_2&#39;);
+        const score2 = is2nd 
+          ? `${m.innings2.runs}/${m.innings2.wickets} (${Math.floor(m.innings2.legalBalls/6)}.${m.innings2.legalBalls%6} ov)` 
+          : &#39;Yet to bat&#39;;
+
+        card.className = `p-2.5 rounded-xl border text-xs flex flex-col space-y-1.5 transition-all ${isCurrentActive ? &#39;bg-blue-950/80 border-blue-500 shadow-md&#39; : &#39;bg-slate-800/80 border-slate-700&#39;}`;
+        card.innerHTML = `
+          &lt;div class=&quot;flex justify-between items-center text-[10px]&quot;&gt;
+            &lt;span class=&quot;font-bold text-amber-300&quot;&gt;${m.isSuperOver ? &#39;⚡ Super Over&#39; : `${m.matchFormat} (${m.totalOversLimit} ov)`}&lt;/span&gt;
+            &lt;span class=&quot;text-slate-400&quot;&gt;${dateStr}&lt;/span&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;flex justify-between items-center font-bold text-slate-100&quot;&gt;
+            &lt;span&gt;${m.teamAName} vs ${m.teamBName}&lt;/span&gt;
+            &lt;span class=&quot;text-emerald-400&quot;&gt;${score1}&lt;/span&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;flex justify-between items-center text-[11px] text-slate-400&quot;&gt;
+            &lt;span&gt;${is2nd ? `2nd Inn (${m.teamBName}): ${score2}` : &#39;1st Innings in progress&#39;}&lt;/span&gt;
+            &lt;span class=&quot;text-[9px] px-1.5 py-0.5 rounded font-bold ${m.matchFinished ? &#39;bg-emerald-900/60 text-emerald-300&#39; : &#39;bg-blue-900/60 text-blue-300&#39;}&quot;&gt;
+              ${m.matchFinished ? &#39;Completed&#39; : &#39;Paused&#39;}
+            &lt;/span&gt;
+          &lt;/div&gt;
+          &lt;button 
+            type=&quot;button&quot; 
+            class=&quot;resume-btn mt-1 w-full py-1 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white font-bold text-[11px] rounded-lg transition-transform&quot;
+            data-index=&quot;${idx}&quot;
+          &gt;
+            ${isCurrentActive ? &#39;▶ Keep Playing Current Match&#39; : &#39;▶ Resume &amp; Open Match&#39;}
+          &lt;/button&gt;
+        `;
+        historyMatchesList.appendChild(card);
+      });
+    }
+
+    historyMatchesList.addEventListener(&#39;click&#39;, (e) =&gt; {
+      const btn = e.target.closest(&#39;.resume-btn&#39;);
+      if (!btn) return;
+      const idx = parseInt(btn.dataset.index);
+      const raw = localStorage.getItem(MATCHES_HISTORY_KEY);
+      if (raw) {
+        const history = JSON.parse(raw);
+        if (history[idx]) resumeMatchFromHistory(history[idx]);
+      }
+    });
+
+    historyModalBtn.addEventListener(&#39;click&#39;, () =&gt; {
+      renderHistoryList();
+      historyModal.classList.remove(&#39;hidden&#39;);
+    });
+
+    closeHistoryModal.addEventListener(&#39;click&#39;, () =&gt; historyModal.classList.add(&#39;hidden&#39;));
+
+    clearHistoryBtn.addEventListener(&#39;click&#39;, () =&gt; {
+      localStorage.removeItem(MATCHES_HISTORY_KEY);
+      renderHistoryList();
+    });
+
+    // Reset Match
+    resetMatchBtn.addEventListener(&#39;click&#39;, () =&gt; {
+      window.matchId = &#39;match_&#39; + Date.now();
+      currentInnings = 1;
+      matchFormat = &#39;T20&#39;;
+      totalOversLimit = 20;
+      maxBowlerOvers = 4;
+      matchFinished = false;
+      isSuperOver = false;
+      targetScore = 0;
+      currentOverBalls = [];
+      batsmanOutCount = 0;
+
+      innings1 = {
+        battingTeam: teamAName,
+        bowlingTeam: teamBName,
+        runs: 0, wickets: 0, legalBalls: 0, extras: 0, fours: 0, sixes: 0, ballHistory: [], bowlers: {}
+      };
+      innings2 = {
+        battingTeam: teamBName,
+        bowlingTeam: teamAName,
+        runs: 0, wickets: 0, legalBalls: 0, extras: 0, fours: 0, sixes: 0, ballHistory: [], bowlers: {}
+      };
+
+      striker = { name: &#39;Striker&#39;, runs: 0, balls: 0, fours: 0, sixes: 0 };
+      nonStriker = { name: &#39;Non-Striker&#39;, runs: 0, balls: 0, fours: 0, sixes: 0 };
+      currentBowlerName = &#39;Bowler 1&#39;;
+      getBowlerStats(currentBowlerName, innings1);
+
+      updateFormatPillsUI();
+      saveActiveMatch(true);
+      render();
+    });
+
+    soundToggleBtn.addEventListener(&#39;click&#39;, () =&gt; {
+      soundEnabled = !soundEnabled;
+      soundIcon.textContent = soundEnabled ? &#39;🔊&#39; : &#39;🔇&#39;;
+      try { localStorage.setItem(SOUND_KEY, soundEnabled.toString()); } catch (e) {}
+      if (soundEnabled) playFourSound();
+    });
+
+    setInterval(() =&gt; saveActiveMatch(false), 3000);
+
+    loadActiveMatch();
+    updateFormatPillsUI();
+    render();
+  &lt;/script&gt;
+  &lt;!-- Toast Notification Container (In-Page replacement for alert) --&gt;
+  &lt;div id=&quot;toast-container&quot; class=&quot;fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 opacity-0 -translate-y-4 max-w-sm w-11/12&quot;&gt;
+    &lt;div id=&quot;toast-card&quot; class=&quot;bg-slate-900/95 border-2 border-amber-500/80 text-amber-200 px-4 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 backdrop-blur-md&quot;&gt;
+      &lt;span id=&quot;toast-icon&quot; class=&quot;text-xl&quot;&gt;⚠️&lt;/span&gt;
+      &lt;p id=&quot;toast-message&quot; class=&quot;text-xs font-semibold leading-snug flex-1&quot;&gt;&lt;/p&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;
